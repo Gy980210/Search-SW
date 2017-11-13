@@ -1,72 +1,95 @@
+//폴더 위치와 파일명에 한글이 포함되면 안 된다.
+#define _CRT_SECURE_NO_WARNINGS 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <io.h>
-#include <dirent.h>
 
 int getFileSize(FILE *fp)
 {
-    int size;
-    long currPos = ftell(fp);
+	int size;
+	long currPos = ftell(fp);
 
-    fseek(fp, 0, SEEK_END);
-    size = (int)ftell(fp);
+	fseek(fp, 0, SEEK_END);
+	size = (int)ftell(fp);
 
-    fseek(fp, currPos, SEEK_SET);
+	fseek(fp, currPos, SEEK_SET);
 
-    return size;
+	return size;
 }
 
 int main()
 {
-    char *find_str = (char *)malloc(200);
-    char *buffer;
-    char *e2;
-    char *str_ptr;
-    char *file_directory = (char *)malloc(200);
-    int count = 0;
-    int file_size;
+	char *find_str = (char *)malloc(200);
+	char *buffer;
+	char *e2;
+	char *str_ptr;
+	char *file_directory = (char *)malloc(200);		//폴더 위치
+	int count;
+	int file_size;
+	char *temp_dir = (char *)malloc(200);
+	_finddatai64_t c_file;
+	intptr_t hFile;
+	
+	scanf(" %s %s", file_directory, find_str);	//예) C:\mysearch apple
+	strcat(file_directory, "\\*.txt");
 
-    printf("폴더 위치 : ");     //폴더 위치 입력
-    scanf(" %[^\n]s", file_directory);
+	if ((hFile = _findfirsti64(file_directory, &c_file)) == -1L)
+	{
+		switch (errno) 
+		{
+		case ENOENT:
+			printf(":: 파일이 없음 ::\n"); break;
+		case EINVAL:
+			fprintf(stderr, "Invalid path name.\n"); exit(1); break;
+		case ENOMEM:
+			fprintf(stderr, "Not enough memory or file name too long.\n"); exit(1); break;
+		default:
+			fprintf(stderr, "Unknown error.\n"); exit(1); break;
+		}
+	}
+	else 
+	{
+		file_directory = strtok(file_directory, "*.txt");
 
-    FILE *fp = fopen(file_directory, "rt");
-    if (fp==NULL)
-        return 1;
+		do 
+		{
+			count = 0;
+			strcat(file_directory, c_file.name);
+			
+			FILE *fp = fopen(file_directory, "rt");
+			if (fp == NULL)
+				return 1;
 
-    printf("찾을 문자열을 입력하세요 : ");     //찾을 문자열을 입력
-    scanf(" %[^\n]s", find_str);
+			file_size = getFileSize(fp);
+			buffer = (char *)malloc((size_t)file_size + 1);
+			memset(buffer, 0, file_size + 1);
 
-    file_size = getFileSize(fp);
-    buffer = malloc((size_t)file_size + 1);
-    memset(buffer, 0, file_size + 1);
+			e2 = fgets(buffer, file_size, fp);      //buffer에 파일 내용을 저장
+			if (e2 == NULL)
+				return 2;
 
-    e2 = fgets(buffer, file_size, fp);      //buffer에 파일 내용을 저장
-    if (e2==NULL)
-        return 2;
+			str_ptr = strstr(buffer, find_str);     //문자를 찾음 - 찾는 속도 개선필요
+			if (str_ptr == NULL)
+			{
+				printf("찾고자 하는 문자열이 파일 내에 없습니다.\n");
+				return 0;
+			}
 
-    str_ptr = strstr(buffer, find_str);     //문자를 찾음 - 찾는 속도 개선필요
-    if (str_ptr==NULL)
-    {
-        printf("찾고자 하는 문자열이 파일 내에 없습니다.\n\n");
-        fclose(fp);
-        free(find_str);
-        free(buffer);
-        main();
-    }
+			while (str_ptr != NULL)                // 검색된 문자열이 없을 때까지 반복
+			{
+				count += 1;
+				str_ptr = strstr(str_ptr + 1, find_str);    //문자를 찾음 - 찾는 속도 개선필요
+			}
 
-    while (str_ptr != NULL)                // 검색된 문자열이 없을 때까지 반복
-    {
-        count += 1;
-        str_ptr = strstr(str_ptr + 1, find_str);    //문자를 찾음 - 찾는 속도 개선필요
-    }
+			printf("%s %d번\n", c_file.name, count);
+			fclose(fp);
+			free(buffer);
 
-    printf("검색한 문자열 '%s'이 %d번 있습니다.", find_str, count);
-    fclose(fp);
-    free(find_str);
-    free(buffer);
-
-    opendir()
-
-    return 0;
+			file_directory = strtok(file_directory, c_file.name);
+		} while (_findnexti64(hFile, &c_file) == 0);
+		_findclose(hFile);
+		free(find_str);
+	}
+	return 0;
 }
