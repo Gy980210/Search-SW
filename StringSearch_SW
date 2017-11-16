@@ -5,33 +5,18 @@
 #include <string.h>
 #include <io.h>
 
-int getFileSize(FILE *fp)
-{
-	int size;
-	long currPos = ftell(fp);
-
-	fseek(fp, 0, SEEK_END);
-	size = (int)ftell(fp);
-
-	fseek(fp, currPos, SEEK_SET);
-
-	return size;
-}
-
 int main()
 {
 	char *find_str = (char *)malloc(200);
 	char *buffer;
-	char *e2;
 	char *str_ptr;
-	char *file_directory = (char *)malloc(200);		//폴더 위치
+	char *file_directory = (char *)malloc(200);
 	int count;
-	int file_size;
-	char *temp_dir = (char *)malloc(200);
+	
 	_finddatai64_t c_file;
 	intptr_t hFile;
 	
-	scanf(" %s %s", file_directory, find_str);	//예) C:\mysearch apple
+	scanf(" %s %s", file_directory, find_str);	
 	strcat(file_directory, "\\*.txt");
 
 	if ((hFile = _findfirsti64(file_directory, &c_file)) == -1L)
@@ -39,7 +24,7 @@ int main()
 		switch (errno) 
 		{
 		case ENOENT:
-			printf(":: 파일이 없음 ::\n"); break;
+			printf(":: No such file ::\n"); break;
 		case EINVAL:
 			fprintf(stderr, "Invalid path name.\n"); exit(1); break;
 		case ENOMEM:
@@ -61,31 +46,27 @@ int main()
 			if (fp == NULL)
 				return 1;
 
-			file_size = getFileSize(fp);
-			buffer = (char *)malloc((size_t)file_size + 1);
+			buffer = (char *)malloc(300);
 			memset(buffer, 0, file_size + 1);
 
-			e2 = fgets(buffer, file_size, fp);      //buffer에 파일 내용을 저장
-			if (e2 == NULL)
-				return 2;
+			fgets(buffer, file_size, fp);    
 
-			str_ptr = strstr(buffer, find_str);     //문자를 찾음 - 찾는 속도 개선필요
+			str_ptr = strstr(buffer, find_str);   
 			if (str_ptr == NULL)
 			{
-				printf("찾고자 하는 문자열이 파일 내에 없습니다.\n");
+				printf("No string in the file.\n");
 				return 0;
 			}
 
-			while (str_ptr != NULL)                // 검색된 문자열이 없을 때까지 반복
+			while (str_ptr != NULL)           
 			{
 				count += 1;
-				str_ptr = strstr(str_ptr + 1, find_str);    //문자를 찾음 - 찾는 속도 개선필요
+				str_ptr = strstr(str_ptr + 1, find_str);  
 			}
 
 			printf("%s %d번\n", c_file.name, count);
 			fclose(fp);
 			free(buffer);
-
 			file_directory = strtok(file_directory, c_file.name);
 		} while (_findnexti64(hFile, &c_file) == 0);
 		_findclose(hFile);
