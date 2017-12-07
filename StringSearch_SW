@@ -8,7 +8,7 @@ typedef struct _Print
 {
 	char filename[256];
 	int count;
-	char str_location[51];
+	char *str_location;
 }print;
 
 int getFileSize(FILE *fp)
@@ -107,20 +107,19 @@ char *KMP(char *s, int slen, char *wanted, int wlen)
 
 int main()
 {
-	char *str = (char *)malloc(1000);
+	char *str = (char *)malloc(100);
 	char *buffer;
 	char *a;
 	char *str_ptr;
-	char *directory = (char *)malloc(1000);
+	char *directory = (char *)malloc(100);
 	int count, check = 0, i = 0, j = 0;
 	int size;
 	char YN = 'Y';
 
 	_finddatai64_t c_file;
 	intptr_t hFile;
+	print *r = (print *)calloc(1, sizeof(print));
 
-	print *r = (print *)malloc(sizeof(print)); 
-	
 	printf("Input a folder directory which contains files : ");
 	scanf("%[^\n]s", directory);
 
@@ -154,7 +153,7 @@ int main()
 			
 			FILE *fp = fopen(directory, "rt");
 			if (fp == NULL)
-				return 1;
+				return -1;
 
 			size = getFileSize(fp);
 			buffer = (char *)calloc(1, (size_t)size + 1);
@@ -169,16 +168,14 @@ int main()
 
 			str_ptr = KMP(buffer, strlen(buffer), str, strlen(str));
 			if (str_ptr == NULL) check += 1;
-			else strncpy(r[i].str_location, str_ptr, 40);
 			
 			while (str_ptr != NULL)               
 			{
 				count += 1;
-				
 				str_ptr = KMP(str_ptr + 1, strlen(str_ptr + 1), str, strlen(str));
 			}
 			
-			r = (print *)realloc(r ,(i+1)*sizeof(print));
+			r = (print *)realloc(r, (i + 1) * sizeof(print));
 			strcpy(r[i].filename, c_file.name);
 			r[i].count = count;
 			strcut(directory);
@@ -197,11 +194,11 @@ int main()
 		else
 		{
 			qsort(r, i, sizeof(print), compare_with_size);
-			printf("File name                      |  Count  | A word appearing first preview\n");
+			printf("File name                      |  Count  | Preview\n");
 			for (j = 0; j < i; j++)
 			{
 				if (r[j].count == 0) continue;
-				printf("%-30s |%9d번|%s\n", r[j].filename, r[j].count, r[j].str_location);
+				printf("%-30s |%8d번| ...%s...\n", r[j].filename, r[j].count);
 			}
 		}
 		_findclose(hFile);
@@ -209,5 +206,6 @@ int main()
 		free(str);
 		free(directory);
 	}
+	system("pause");
 	return 0;
 }
